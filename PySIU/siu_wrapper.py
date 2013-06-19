@@ -6,7 +6,6 @@ __copyright__ = 'Ericsson Spain 2013'
 __version__ = 'R13A01'
 __email__ = 'esteban.garcia.gurtubay@gmail.com'
 __date__ = '19/06/2013 17:07:15'
-__caname__ = 'scmty'
 
 
 # Description     : A wrapper library to interact with SIU nodes
