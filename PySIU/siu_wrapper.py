@@ -2,9 +2,7 @@
 # coding=utf-8
 
 __author__ = 'Esteban Garcia-Gurtubay'
-__copyright__ = 'Ericsson Spain 2013'
 __version__ = 'R13A01'
-__email__ = 'esteban.garcia.gurtubay@gmail.com'
 __date__ = '19/06/2013 17:07:15'
 
 
@@ -46,6 +44,7 @@ class SIU_Wrapper(object):
         siu_command_result_dict['cmd_string'] = 'ssh login'
         siu_command_result_dict['cmd_time'] = self.get_timestamp()
 
+        self.logger.info('Login into SIU %s' % siu_ip)
         try:
             # Sometimes the SSH connection to a SIU hangs forever, even from command line.
             # An extra timeout mechanism is required, or a Worker task will never finish
@@ -55,27 +54,33 @@ class SIU_Wrapper(object):
             signal.signal(signal.SIGALRM, self.signal_handler)
             signal.alarm(timeout+5)
             self.ssh.connect(siu_ip, username=siu_user, password=siu_password, timeout=5)
+            self.logger.info('Login was successful')
+
+            self.logger.info('Invoking SIU shell')
+            self.chan = self.ssh.invoke_shell()
+            self.logger.info('Got SIU shell')
 
         except IOError as e:
             siu_communication_result_dict['comm_success'] = False
-            siu_communication_result_dict['comm_error'] = 'IOError when connecting to SIU'
+            siu_communication_result_dict['comm_error'] = 'IOError while connecting to SIU'
             siu_communication_result_dict['comm_data'] = str(e)
             siu_command_result_dict['cmd_success'] = False
 
+            self.logger.error('Login failed')
             self.logger.error('%s:' % siu_communication_result_dict['comm_error'])
             self.logger.error('  %s' % siu_communication_result_dict['comm_data'])
 
         except Exception as e:
             siu_communication_result_dict['comm_success'] = False
-            siu_communication_result_dict['comm_error'] = 'Exception when connecting to SIU'
+            siu_communication_result_dict['comm_error'] = 'Exception while connecting to SIU'
             siu_communication_result_dict['comm_data'] = str(e)
             siu_command_result_dict['cmd_success'] = False
 
+            self.logger.error('Login failed')
             self.logger.error('%s:' % siu_communication_result_dict['comm_error'])
             self.logger.error('  %s' % siu_communication_result_dict['comm_data'])
 
         else:
-            self.chan = self.ssh.invoke_shell()
             siu_communication_result_dict['comm_success'] = True
             siu_command_result_dict['cmd_success'] = True
 
@@ -96,13 +101,12 @@ class SIU_Wrapper(object):
         siu_command_result_dict['cmd_time'] = self.get_timestamp()
 
         siu_communication_dict = self.SIU_read_response(expected_response_list=['OSmon> ', '[root]# '])
+        self.logger.info('Waiting for SIU prompt')
 
         if siu_communication_dict['comm_success']:
             siu_command_result_dict['cmd_success'] = True
             siu_command_result_dict['cmd_data'] = siu_communication_dict
-
-            self.logger.debug('Got SIU prompt')
-            self.logger.debug('')
+            self.logger.info('Got SIU prompt')
 
         else:
             siu_command_result_dict['cmd_success'] = False
@@ -118,7 +122,7 @@ class SIU_Wrapper(object):
     def SIU_send_string(self, cmd, timeout=15):
         """Send a string to the SIU"""
 
-        # Add a trailing Carriage Return if not present already. This can be \r or \r\n
+        # Add a trailing Carriage Return if not present already. This can be \r or \r\n ??
         if cmd == '' or cmd[-1] != '\r':
             cmd += '\r'
 
@@ -134,11 +138,13 @@ class SIU_Wrapper(object):
             self.chan.send(cmd)
 
         except IOError as e:
+            self.logger.error('IOError while sending string to SIU')
             self.logger.error(str(e))
             self.logger.error('')
             success_status = False
 
         except Exception as e:
+            self.logger.error('Exception while sending string to SIU')
             self.logger.error(str(e))
             self.logger.error('')
             success_status = False
@@ -191,7 +197,7 @@ class SIU_Wrapper(object):
 
         except IOError as e:
             siu_communication_result_dict['comm_success'] = False
-            siu_communication_result_dict['comm_error'] = 'IOError while sending command to SIU: %s' % str(e)
+            siu_communication_result_dict['comm_error'] = 'IOError while reading response from SIU: %s' % str(e)
             self.logger.error('< %s:' % siu_communication_result_dict['comm_error'])
             self.logger.error('  %s' % siu_communication_result_dict['comm_data'])
 
@@ -334,7 +340,7 @@ class SIU_Wrapper(object):
                 'commit', 'subscribe', 'unsubscribe', 'getsubscriptionstatus',
                 'gettransactionstatus', 'checkconsistency', 'gettransactionid',
                 'dump', 'getcounters', 'getalarmlist', 'changepwdrs',
-                'startsession', 'backup', 'endsession',
+                'startsession', 'backup', 'endsession', 'uselocalsftp',
             ]
 
             for command_string in siu_command_list:
@@ -369,6 +375,7 @@ class SIU_Wrapper(object):
         OSmon> exit
         """
 
+        self.logger.info('Exiting from SIU')
         self.SIU_send_string('exit')
         time.sleep(1.5)
         self.SIU_close_channel()
