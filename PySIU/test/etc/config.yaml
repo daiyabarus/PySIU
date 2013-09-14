@@ -1,0 +1,25 @@
+#__author__ = 'Esteban Garcia-Gurtubay'
+#__copyright__ = 'Ericsson Spain 2013'
+#__version__ = 'R12.2D02'
+#__date__ = '17/05/2013 11:50:14'
+
+
+# Description:    : Config values for SCMT
+# Usage:          : This Python file is meant to imported by SCMT
+
+# IMPORTANT: this file follows a YAML format, so the space indentations must be used !!
+
+
+# Base FDN for the SIU ManagedElements. This is OSS-dependent
+SIU_BASE_FDN: SubNetwork=ONRM_RootMo,SubNetwork=IPRAN
+
+
+# How many processes should be launched in parallel to interact with the SIU nodes
+NUM_WORKERS: 40
+
+
+# SIU Black list - These SIUs are ignored. Put each FDN in a line, preceded by 4 spaces and '- '
+# Use this for SIUs where SSH fails, for example
+SIU_BLACK_LIST:
+    - SubNetwork=ONRM_RootMo,SubNetwork=IPRAN,ManagedElement=SIU_blacklisted_1
+    - SubNetwork=ONRM_RootMo,SubNetwork=IPRAN,ManagedElement=another_blacklisted_SIU
